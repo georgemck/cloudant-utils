@@ -1,0 +1,43 @@
+/*
+The following procedure can be used to undelete a user document in Cloudant.
+First, login to the Cloudant database as an administrator. Use an Administrator's username and password. Only admins have access to the _users table. 
+The previously deleted document needs to be retrieved from the database. However, since it has been deleted, all requests for it will fail. You can instead download a file of all deleted revisions for document by browser url as a get request, e.g. https://ACCOUNTUSERNAME-bluemix.cloudant.com/_users/TARGETUSERDOCUMENT/?revs=true&open_revs=all. Looking through the downloaded file, create a target revision working from the most recent. After creating the target revision, you can use it to retrieve it's document. In the downloaded file, take the latest revision and subtract one from its number, then look at the top of the list of revision ids and get the second one and use it as the TARGETREVISION. It will be immediately following the last revision id. Now the specific revision of the document can be retrieved by browser url get request, e.g. https://ACCOUNTUSERNAME-bluemix.cloudant.com/_users/TARGETUSERDOCUMENT/?rev=TARGETREVISION
+The retrieved document will contain the "_rev". Delete it. Use the rest of the document revision in a put/post/insert into the database to restore it as the version of the document, thus undeleting a user document in Cloudant.
+*/
+
+//This Node.js program will restore the deleted user document. 
+
+var ACCOUNTUSERNAME = 'aaa-bbb-ccc-ddd-eee-bluemix';
+var PASSWORD = '@dministrator$ecretP@ssW0rd';
+
+var TARGETUSERDOCUMENT = "org.couchdb.user:randomuserXYZ123@ibm123456.com";
+var USERDOCUMENTREVISION = {
+    "_id": TARGETUSERDOCUMENT,
+    "name": "randomuserXYZ123@ibm123456.com",
+    "roles": [],
+    "type": "user",
+    "password_scheme": "pbkdf2",
+    "iterations": 111,
+    "derived_key": "9dbbd43599b6fdae170bb6990e9afca99881f6e7",
+    "salt": "e0b6331fe04fc2aef4b152de70fac8d8",
+    "updateTime": "2024-01-11T23:52:45.006Z"
+};
+
+var Cloudant = require('cloudant');
+
+var cloudant = Cloudant({
+    account: ACCOUNTUSERNAME,
+    key: ACCOUNTUSERNAME,
+    password: PASSWORD
+});
+
+var db = cloudant.db.use('_users');
+
+db.insert(USERDOCUMENTREVISION, function (err, result) {
+    if (err) {
+        throw err;
+    }
+});
+
+
+// notes from http://garmoncheg.blogspot.com/2013/11/couchdb-restoring-deletedupdated.html
